@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline protocol test for the tablet server (stdlib only). Plays the Mac side of PROTOCOL.md.
+"""Offline protocol test for the tablet server (stdlib only). Plays the Mac side of docs/PROTOCOL.md.
 
 Run the server built with EPAPER=OFF and --dump, then:
     python3 test_sender.py --host 127.0.0.1 --png server-dump.png

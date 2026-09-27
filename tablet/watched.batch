@@ -1,2 +1,0 @@
-# watched run: waits up to 90 s for a tap, then about 2.5 min of steps
-300 ./refreshtest

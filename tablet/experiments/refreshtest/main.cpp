@@ -11,7 +11,7 @@
 //   --tiny         only the full-screen steps
 //   --no-modeitem  don't create the EPScreenModeItem
 
-#include "../epaper_private.h"
+#include "../../epaper_private.h"
 
 #include <QElapsedTimer>
 #include <QGuiApplication>

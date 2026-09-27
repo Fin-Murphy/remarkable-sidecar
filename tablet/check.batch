@@ -1,3 +1,0 @@
-# unattended check: does the QML-window build render?
-40 ./refreshtest --auto --tiny
-40 ./refreshtest --auto --tiny --painted

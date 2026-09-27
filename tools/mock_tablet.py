@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mock reMarkable 2 for rM2 Sidecar (see ../PROTOCOL.md). Python stdlib only.
+"""Mock reMarkable 2 for rM2 Sidecar (see ../docs/PROTOCOL.md). Python stdlib only.
 
 Listens for the Mac, sends HELLO, decodes RECTs into a framebuffer, saves it as a PNG
 whenever it changed (at most once a second), and logs traffic every 2 s.
