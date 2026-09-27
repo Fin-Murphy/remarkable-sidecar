@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# Your machine-specific settings (copy config.example to config.local)
+config.local
+
+# Build output
+build/
+.build/
+build-host/
+.swiftpm/
+xcuserdata/
+
+# reMarkable SDK installers (download them yourself; not redistributable)
+remarkable-*-toolchain.sh
+
+# Tablet backups and logs
+*.img
+*.tar
+*.log

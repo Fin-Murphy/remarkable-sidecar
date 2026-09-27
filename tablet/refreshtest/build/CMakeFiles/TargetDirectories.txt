@@ -1,6 +1,0 @@
-/src/refreshtest/build/CMakeFiles/refreshtest.dir
-/src/refreshtest/build/CMakeFiles/refreshtest_qmlimportscan.dir
-/src/refreshtest/build/CMakeFiles/edit_cache.dir
-/src/refreshtest/build/CMakeFiles/rebuild_cache.dir
-/src/refreshtest/build/CMakeFiles/refreshtest_autogen_timestamp_deps.dir
-/src/refreshtest/build/CMakeFiles/refreshtest_autogen.dir

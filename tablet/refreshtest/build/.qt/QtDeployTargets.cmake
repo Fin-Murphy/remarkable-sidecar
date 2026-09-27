@@ -1,2 +1,0 @@
-set(__QT_DEPLOY_TARGET_refreshtest_FILE /src/refreshtest/build/refreshtest)
-set(__QT_DEPLOY_TARGET_refreshtest_TYPE EXECUTABLE)
