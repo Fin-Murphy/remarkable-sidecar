@@ -1,6 +1,6 @@
 # rM2 Sidecar (Mac side)
 
-rM2 Sidecar is a menu-bar app. It creates a 1404x1872 virtual display, captures it with ScreenCaptureKit at 4 fps in grayscale, and streams the dirty rects to the tablet. It also turns tablet input into mouse events. The wire format is in [`../PROTOCOL.md`](../PROTOCOL.md).
+rM2 Sidecar is a menu-bar app. It creates a 1404x1872 virtual display, captures it with ScreenCaptureKit at 4 fps in grayscale, and streams the dirty rects to the tablet. It also turns tablet input into mouse events. The wire format is in [`../docs/PROTOCOL.md`](../docs/PROTOCOL.md). Setup and everyday use are in the [top-level README](../README.md); this file is for development.
 
 ## Build
 
@@ -9,7 +9,9 @@ swift build              # debug build, for a compile check
 ./build-app.sh           # release build of build/RM2Sidecar.app, signed (see below)
 ```
 
-`build-app.sh` signs with your "Apple Development" identity if you have one. That way your Screen Recording and Accessibility grants survive rebuilds. To choose an identity yourself, set `SIGN_IDENTITY`. Use `SIGN_IDENTITY=-` for ad-hoc signing, but then you have to grant both permissions again after every rebuild.
+`build-app.sh` signs with your "Apple Development" identity if you have one. That way your Screen Recording and Accessibility grants survive rebuilds. To choose an identity yourself, set `SIGN_IDENTITY` in `../config.local`. Use `SIGN_IDENTITY=-` for ad-hoc signing, but then you have to grant both permissions again after every rebuild.
+
+`build-app.sh` also bakes `RM2_HOST`, `RM2_WIFI_HOST` and `RM2_PORT` from `../config.local` into the app's `LSEnvironment`, so they apply when the app is opened from Finder. Command-line flags still override them.
 
 ## Run
 
@@ -27,7 +29,7 @@ open build/RM2Sidecar.app --stdout /tmp/rm2.log --args --connect         # with 
   - Guard refusals are shown in words, for example "Tablet busy (its screen app restarted too often). Try again in 90 s".
   - The app never retries starting the tablet on its own.
 - **Options:**
-  - `--host` sets the SSH host (default `10.11.99.1`); `--port` sets the server's port on the tablet (default `9876`). You can also set `RM2_HOST` and `RM2_PORT`.
+  - `--host` sets the SSH host (default `10.11.99.1`); `--port` sets the server's port on the tablet (default `9876`); `--wifi-host` names the Wi-Fi host (default: `remarkable.local`, then the last Wi-Fi address the tablet reported). The environment variables `RM2_HOST`, `RM2_PORT` and `RM2_WIFI_HOST` do the same.
   - `--no-launch` connects straight to `host:port` at launch, without SSH.
 - **Scripting:** `kill -USR2 <pid>` = Connect, `kill -USR1 <pid>` = Disconnect.
 - **Menu-bar status items:** Control Center's items on the reMarkable display (clock, Wi-Fi, battery, sound) are left out of the capture. That way a clock showing seconds doesn't keep the e-ink busy. Your main display is unaffected.
@@ -43,16 +45,12 @@ open build/RM2Sidecar.app --stdout /tmp/rm2.log --args --connect         # with 
 
 ## Permissions
 
-On first launch, macOS asks for two permissions:
-
-- **Screen Recording.** Grant it, then quit and relaunch the app. The app can't capture until it's relaunched.
-- **Accessibility.** Needed for pen input. It takes effect immediately.
-
-If either is missing, the menu shows a "Grant…" item that opens the right Settings pane.
+Screen Recording (needs a relaunch after granting) and Accessibility (for pen input). See the [top-level README](../README.md#6-first-launch-and-permissions).
 
 ## Mock tablet
 
 ```sh
-python3 ../mock/mock_tablet.py                   # saves mock_frame.png, logs bytes every 2 s
-python3 ../mock/mock_tablet.py --script-input    # also moves, drags and clicks on the virtual display
+python3 ../tools/mock_tablet.py                   # saves mock_frame.png, logs bytes every 2 s
+python3 ../tools/mock_tablet.py --script-input    # also moves, drags and clicks on the virtual display
+open build/RM2Sidecar.app --args --host 127.0.0.1 --no-launch   # then point the app at it
 ```
