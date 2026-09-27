@@ -41,8 +41,15 @@ if [ "$recent" -ge 3 ]; then
     exit 5
 fi
 
+# Wi-Fi power save makes latency spiky (100-350 ms), so it is off while a session runs and
+# restored to its previous state on every exit path (restore() and the watchdog).
+PS_BEFORE=$(iw dev wlan0 get power_save 2>/dev/null | awk '{print $3}')  # "on", "off" or empty (no Wi-Fi)
+
 restore() {
     trap - EXIT INT TERM HUP
+    if [ "$PS_BEFORE" = on ]; then
+        iw dev wlan0 set power_save on && echo "run.sh: Wi-Fi power save restored to on"
+    fi
     # Our app must be gone before xochitl starts, or xochitl can't take the framebuffer lock.
     if [ -n "$APP" ] && kill -0 "$APP" 2>/dev/null; then kill "$APP"; sleep 3; kill -9 "$APP" 2>/dev/null; fi
     date +%s >> "$STARTS"
@@ -54,9 +61,12 @@ trap 'exit 1' INT TERM HUP
 
 # Independent watchdog: once this script is gone (for any reason), make sure xochitl runs.
 SELF=$$
-setsid sh -c "i=0; while kill -0 $SELF 2>/dev/null && [ \$i -lt $((TOTAL + 60)) ]; do sleep 1; i=\$((i+1)); done; systemctl is-active -q xochitl || { date +%s >> $STARTS; systemctl start xochitl; }" </dev/null >/dev/null 2>&1 &
+setsid sh -c "i=0; while kill -0 $SELF 2>/dev/null && [ \$i -lt $((TOTAL + 60)) ]; do sleep 1; i=\$((i+1)); done; [ \"$PS_BEFORE\" = on ] && iw dev wlan0 set power_save on; systemctl is-active -q xochitl || { date +%s >> $STARTS; systemctl start xochitl; }" </dev/null >/dev/null 2>&1 &
 
 echo "run.sh: battery ${battery}%, stopping xochitl for at most ${TOTAL}s"
+if [ "$PS_BEFORE" = on ]; then
+    iw dev wlan0 set power_save off && echo "run.sh: Wi-Fi power save off (was on)"
+fi
 systemctl stop xochitl
 cd "$(dirname "$0")"
 # Here-doc (not a pipe) so the loop runs in this shell and restore() sees $APP.

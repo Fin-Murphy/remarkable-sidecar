@@ -4,10 +4,13 @@
 //
 // Input: the pen (read directly from evdev, see pen.cpp) is sent as hover/down/move/up; a finger
 // tap is sent as touch_tap, a finger held still for 600 ms as touch_long_press (right click).
-// Press the power button to quit (xochitl then comes back via run.sh).
+// The session ends (and run.sh brings xochitl back) when the power button is pressed, on SIGTERM
+// (the Mac's Disconnect), or when no Mac has been connected for --grace seconds.
 //
-// Usage: rm2sidecar [--listen ADDRESS] [--port PORT] [--dump PNG] [--no-input]
-//   --listen  address to listen on (default 10.11.99.1, the USB interface only)
+// Usage: rm2sidecar [--listen ADDRESS] [--port PORT] [--grace SECONDS] [--dump PNG] [--no-input]
+//   --listen  address to listen on (default 127.0.0.1: the Mac reaches it through an SSH tunnel,
+//             so the port is not exposed on USB or Wi-Fi)
+//   --grace   quit after this long without a Mac (default 0 = never; 60 s allowed at startup)
 //   --dump    save the framebuffer to PNG after every frame (for offline tests)
 
 #include "link.h"
@@ -71,7 +74,6 @@ public:
         longPress_.setSingleShot(true);
         longPress_.setInterval(600);
         QObject::connect(&longPress_, &QTimer::timeout, [this] {
-            qInfo("touch: long press");
             if (onGesture) onGesture(5, pressPos_);
             pressed_ = false;  // the release that follows is not a tap
         });
@@ -80,21 +82,17 @@ public:
 
 protected:
     void mousePressEvent(QMouseEvent *e) override {
-        qInfo("touch: press %d,%d (%s)", e->position().toPoint().x(), e->position().toPoint().y(),
-              ignoreTouch && ignoreTouch() ? "ignored, pen in range" : "ok");
         pressed_ = !(ignoreTouch && ignoreTouch());
         pressPos_ = e->position().toPoint();
         if (pressed_) longPress_.start();
     }
     void mouseMoveEvent(QMouseEvent *e) override {
         if (pressed_ && (e->position().toPoint() - pressPos_).manhattanLength() > 30) {
-            qInfo("touch: moved to %d,%d, not a tap", e->position().toPoint().x(), e->position().toPoint().y());
             pressed_ = false;  // a swipe, not a tap or long press
             longPress_.stop();
         }
     }
-    void mouseReleaseEvent(QMouseEvent *e) override {
-        qInfo("touch: release %d,%d", e->position().toPoint().x(), e->position().toPoint().y());
+    void mouseReleaseEvent(QMouseEvent *) override {
         longPress_.stop();
         if (pressed_ && onGesture) onGesture(4, pressPos_);
         pressed_ = false;
@@ -121,10 +119,12 @@ static QRect drawBanner(QImage &image, const QString &text) {
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
     QCommandLineParser cli;
-    cli.addOptions({{"listen", "Address to listen on.", "address", "10.11.99.1"},
+    cli.addOptions({{"listen", "Address to listen on.", "address", "127.0.0.1"},
                     {"port", "TCP port.", "port", "9876"},
+                    {"grace", "Quit after this many seconds without a Mac (0 = never).", "seconds", "0"},
                     {"dump", "Save the framebuffer to this PNG after every frame.", "png"},
-                    {"no-input", "Don't send pen or touch input to the Mac."}});
+                    {"no-input", "Don't send pen or touch input to the Mac."},
+                    {"verbose", "Log every frame's size and transfer time."}});
     cli.process(app);
 
     app.installEventFilter(new PowerKeyQuits(&app));
@@ -160,9 +160,25 @@ int main(int argc, char *argv[]) {
     QObject *framebuffer = EPFramebuffer::instance();
 #endif
 
+    // Without a Mac for --grace seconds (a Mac crash, a pulled cable), end the session.
+    QTimer noMac;
+    noMac.setSingleShot(true);
+    const int grace = cli.value("grace").toInt();
+    QObject::connect(&noMac, &QTimer::timeout, [grace] {
+        qInfo("no Mac for %d s: quitting", grace);
+        QCoreApplication::quit();
+    });
+    if (grace > 0) noMac.start(qMax(grace, 60) * 1000);  // give the Mac time to connect at startup
+
     Link link(&app, cli.value("listen").toLatin1(), cli.value("port").toUShort(), kWidth, kHeight);
+    link.verbose = cli.isSet("verbose");
     link.onConnected = [&](bool connected) {
-        if (!connected) canvas->update(drawBanner(canvas->image, "rM2 Sidecar: Mac disconnected, waiting on " + address));
+        if (connected) {
+            noMac.stop();
+        } else {
+            canvas->update(drawBanner(canvas->image, "rM2 Sidecar: Mac disconnected, waiting on " + address));
+            if (grace > 0) noMac.start(grace * 1000);
+        }
     };
     link.onFrame = [&](const QList<Rect> &rects) {
         bool fast = false;

@@ -404,6 +404,8 @@ CMakeFiles/rm2sidecar.dir/link.cpp.o: /src/server/link.cpp \
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/c++/13.4.0/thread \
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/c++/13.4.0/bits/std_thread.h \
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/c++/13.4.0/bits/this_thread_sleep.h \
+ /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtCore/QElapsedTimer \
+ /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtCore/qelapsedtimer.h \
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtCore/QMetaObject \
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtCore/qobjectdefs.h \
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtCore/QtEndian \

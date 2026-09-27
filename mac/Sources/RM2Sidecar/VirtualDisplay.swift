@@ -64,10 +64,13 @@ final class VirtualDisplay {
 
     /// Gives only this display a plain white desktop, so a rotating wallpaper doesn't cause
     /// constant e-ink updates. Returns false if the display has no NSScreen yet.
+    /// This display's NSScreen, once macOS has set it up.
+    var screen: NSScreen? {
+        NSScreen.screens.first { $0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID == displayID }
+    }
+
     func setWhiteDesktop() -> Bool {
-        guard let screen = NSScreen.screens.first(where: {
-            $0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID == displayID
-        }) else { return false }
+        guard let screen else { return false }
         do {
             try NSWorkspace.shared.setDesktopImageURL(try whitePNG(), for: screen, options: [
                 .imageScaling: NSImageScaling.scaleAxesIndependently.rawValue,

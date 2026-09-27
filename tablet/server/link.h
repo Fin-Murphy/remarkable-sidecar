@@ -23,6 +23,8 @@ public:
     std::function<void()> onFullRefresh;
     std::function<void(bool)> onConnected;
 
+    bool verbose = false;  // log each frame's size and how long its bytes took to arrive
+
     Link(QObject *context, QByteArray address, quint16 port, int width, int height);
     ~Link();
     bool start();  // binds and starts the thread; false if the port can't be bound

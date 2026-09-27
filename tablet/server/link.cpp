@@ -1,5 +1,6 @@
 #include "link.h"
 
+#include <QElapsedTimer>
 #include <QMetaObject>
 #include <QtEndian>
 #include <arpa/inet.h>
@@ -124,6 +125,8 @@ bool Link::serve(int fd) {
     }
 
     QList<Rect> pending;
+    QElapsedTimer frameTimer;  // from a frame's first RECT header to its FRAME_END
+    qint64 frameBytes = 0;
     for (;;) {
         quint8 type;
         if (!readExact(fd, &type, 1)) return false;
@@ -131,6 +134,7 @@ bool Link::serve(int fd) {
         case 0x01: {  // RECT
             uchar h[13];
             if (!readExact(fd, h, sizeof h)) return false;
+            if (pending.isEmpty()) { frameTimer.start(); frameBytes = 0; }
             const int x = qFromLittleEndian<quint16>(h), y = qFromLittleEndian<quint16>(h + 2);
             const int w = qFromLittleEndian<quint16>(h + 4), hgt = qFromLittleEndian<quint16>(h + 6);
             const quint8 hint = h[8];
@@ -141,6 +145,7 @@ bool Link::serve(int fd) {
             }
             QByteArray compressed(int(len), Qt::Uninitialized);
             if (!readExact(fd, compressed.data(), len)) return false;
+            frameBytes += 14 + len;
             Rect r{QRect(x, y, w, hgt), hint, QByteArray(w * hgt, Qt::Uninitialized)};
             uLongf outLen = uLongf(r.pixels.size());
             if (uncompress(reinterpret_cast<Bytef *>(r.pixels.data()), &outLen,
@@ -156,6 +161,8 @@ bool Link::serve(int fd) {
             post([this] { if (onFullRefresh) onFullRefresh(); });
             break;
         case 0x03:  // FRAME_END
+            if (verbose && !pending.isEmpty())
+                qInfo("frame: %lld rects, %lld bytes, received in %lld ms", qint64(pending.size()), frameBytes, frameTimer.elapsed());
             if (!pending.isEmpty()) post([this, rects = std::move(pending)] { if (onFrame) onFrame(rects); });
             pending = {};
             break;

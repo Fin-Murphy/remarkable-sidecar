@@ -1,0 +1,3 @@
+# everyday session (Mac "Connect"): ends on power button, Disconnect, or 30 s without a Mac;
+# 8 h absolute backstop
+28800 ./rm2sidecar --listen 127.0.0.1 --grace 30

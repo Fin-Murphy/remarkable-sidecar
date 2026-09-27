@@ -4,11 +4,24 @@ import ScreenCaptureKit
 /// Captures one display with ScreenCaptureKit and delivers 8-bit grayscale frames
 /// (displayWidth x displayHeight, row-major, no padding). Uses the luma plane of a
 /// full-range 4:2:0 YCbCr buffer, so no color conversion is done here.
+///
+/// Control Center's menu-bar items (clock, Wi-Fi, battery, sound) are left out of the capture:
+/// a clock showing seconds would otherwise redraw the e-ink screen every second and the display
+/// would never go idle. Other displays are not affected. The filter is fixed for the stream's life:
+/// changing it with updateContentFilter sometimes stopped the stream silently.
+///
+/// ScreenCaptureKit calls back about 4 times a second even on an idle display, so no callback for
+/// `stallAfter` seconds means the stream has died silently; `checkAlive()` then restarts it.
 final class Capture: NSObject, SCStreamOutput, SCStreamDelegate {
     private let queue: DispatchQueue
     private let onFrame: ([UInt8]) -> Void
     private let onError: (String) -> Void
     private var stream: SCStream?
+    private var displayID: CGDirectDisplayID = 0
+    private var fps = 4
+    private var lastCallback = Date()  // on `queue`
+    private var restarting = false     // on `queue`
+    private static let stallAfter: TimeInterval = 3
 
     init(queue: DispatchQueue, onFrame: @escaping ([UInt8]) -> Void, onError: @escaping (String) -> Void) {
         self.queue = queue
@@ -17,15 +30,19 @@ final class Capture: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     func start(displayID: CGDirectDisplayID, fps: Int) async throws {
+        self.displayID = displayID
+        self.fps = fps
         // A freshly created virtual display can take a moment to show up.
-        var scDisplay: SCDisplay?
+        var found: (SCShareableContent, SCDisplay)?
         for _ in 0..<20 {
             let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
-            scDisplay = content.displays.first { $0.displayID == displayID }
-            if scDisplay != nil { break }
+            if let display = content.displays.first(where: { $0.displayID == displayID }) {
+                found = (content, display)
+                break
+            }
             try await Task.sleep(nanoseconds: 250_000_000)
         }
-        guard let scDisplay else {
+        guard let (content, display) = found else {
             throw NSError(domain: "Capture", code: 1,
                           userInfo: [NSLocalizedDescriptionKey: "virtual display not found by ScreenCaptureKit"])
         }
@@ -38,20 +55,54 @@ final class Capture: NSObject, SCStreamOutput, SCStreamDelegate {
         config.queueDepth = 3
         config.showsCursor = true
 
-        let stream = SCStream(filter: SCContentFilter(display: scDisplay, excludingWindows: []),
-                              configuration: config, delegate: self)
+        let controlCenter = content.applications.filter { $0.bundleIdentifier == "com.apple.controlcenter" }
+        let filter = SCContentFilter(display: display, excludingApplications: controlCenter, exceptingWindows: [])
+        let stream = SCStream(filter: filter, configuration: config, delegate: self)
         try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: queue)
         try await stream.startCapture()
+        queue.sync { lastCallback = Date() }
         self.stream = stream
-        log("Capture started at \(fps) fps")
+        log("Capture started at \(fps) fps\(controlCenter.isEmpty ? "" : ", menu-bar clock and status items left out")")
+
+        if ProcessInfo.processInfo.environment["RM2_TEST_STALL"] != nil {  // test hook: die silently
+            Task {
+                try? await Task.sleep(nanoseconds: 10_000_000_000)
+                log("Capture: test hook stopping the stream silently")
+                try? await stream.stopCapture()
+            }
+        }
+    }
+
+    /// Call regularly on `queue`. Restarts the stream if ScreenCaptureKit has gone silent.
+    func checkAlive() {
+        guard stream != nil, !restarting, Date().timeIntervalSince(lastCallback) > Self.stallAfter else { return }
+        restarting = true
+        log("Capture stalled (no frames from ScreenCaptureKit for \(Int(Self.stallAfter)) s); restarting it")
+        let old = stream
+        stream = nil
+        Task {
+            try? await old?.stopCapture()
+            do {
+                try await start(displayID: displayID, fps: fps)
+            } catch {
+                onError("Capture restart failed: \(error.localizedDescription)")
+            }
+            restartFinished()
+        }
+    }
+
+    private func restartFinished() {
+        queue.async { self.restarting = false; self.lastCallback = Date() }
     }
 
     func stream(_ stream: SCStream, didOutputSampleBuffer sampleBuffer: CMSampleBuffer, of type: SCStreamOutputType) {
         guard type == .screen,
               let attachments = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false)
                 as? [[SCStreamFrameInfo: Any]],
-              let rawStatus = attachments.first?[.status] as? Int,
-              SCFrameStatus(rawValue: rawStatus) == .complete,
+              let rawStatus = attachments.first?[.status] as? Int
+        else { return }
+        lastCallback = Date()
+        guard SCFrameStatus(rawValue: rawStatus) == .complete,
               let pixels = CMSampleBufferGetImageBuffer(sampleBuffer)
         else { return }
 

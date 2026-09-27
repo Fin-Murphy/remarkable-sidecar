@@ -8,6 +8,8 @@ final class MenuBar: NSObject, NSMenuDelegate {
                                                action: #selector(openAccessibility), keyEquivalent: "")
     private let screenRecordingItem = NSMenuItem(title: "Grant Screen Recording…",
                                                  action: #selector(openScreenRecording), keyEquivalent: "")
+    private let connectItem = NSMenuItem(title: "Connect", action: #selector(connect), keyEquivalent: "")
+    private let disconnectItem = NSMenuItem(title: "Disconnect", action: #selector(disconnect), keyEquivalent: "")
 
     init(sidecar: Sidecar) {
         self.sidecar = sidecar
@@ -16,23 +18,41 @@ final class MenuBar: NSObject, NSMenuDelegate {
 
         let menu = NSMenu()
         menu.delegate = self
+        menu.autoenablesItems = false
         statusLine.isEnabled = false
         menu.addItem(statusLine)
         menu.addItem(screenRecordingItem)
         menu.addItem(accessibilityItem)
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Connect", action: #selector(connect), keyEquivalent: "").target = self
-        menu.addItem(withTitle: "Disconnect", action: #selector(disconnect), keyEquivalent: "").target = self
+        connectItem.target = self
+        disconnectItem.target = self
+        menu.addItem(connectItem)
+        menu.addItem(disconnectItem)
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         accessibilityItem.target = self
         screenRecordingItem.target = self
         item.menu = menu
+        setState(.disconnected(nil))
     }
 
-    func setStatus(_ status: String) {
-        statusLine.title = status
-        item.button?.title = status.hasPrefix("Connected to") ? "rM2 ●" : "rM2 ○"
+    func setState(_ state: SessionState) {
+        let (title, icon): (String, String)
+        switch state {
+        case .disconnected(let reason): (title, icon) = (reason.map { "Disconnected: \($0)" } ?? "Disconnected", "rM2 ○")
+        case .starting(let what): (title, icon) = (what, "rM2 …")
+        case .connected(let path): (title, icon) = (path.isEmpty ? "Connected" : "Connected (\(path))", "rM2 ●")
+        case .error(let message): (title, icon) = ("Error: \(message)", "rM2 !")
+        }
+        statusLine.title = title
+        item.button?.title = icon
+        let busy: Bool
+        switch state {
+        case .starting, .connected: busy = true
+        default: busy = false
+        }
+        connectItem.isEnabled = !busy
+        disconnectItem.isEnabled = busy
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {

@@ -15,8 +15,8 @@ struct InputEvent {
 /// TCP client for the tablet. Speaks the protocol in PROTOCOL.md and reconnects every 2 s
 /// while `start()`ed. All callbacks run on `queue`.
 final class Link {
-    var onStatus: (String) -> Void = { _ in }
-    var onHello: () -> Void = {}
+    var onHello: () -> Void = {}  // connected and ready for frames
+    var onLost: (String) -> Void = { _ in }  // a ready connection went away (it keeps retrying)
     var onInput: (InputEvent) -> Void = { _ in }
     var onDrained: () -> Void = {}
 
@@ -46,7 +46,6 @@ final class Link {
     func stop() {
         wanted = false
         close()
-        onStatus("Disconnected")
     }
 
     func send(_ data: Data) {
@@ -72,12 +71,10 @@ final class Link {
         let connection = NWConnection(host: NWEndpoint.Host(host), port: NWEndpoint.Port(rawValue: port)!,
                                       using: NWParameters(tls: nil, tcp: tcp))
         self.connection = connection
-        onStatus("Connecting to \(host):\(port)…")
         connection.stateUpdateHandler = { [weak self] state in
             guard let self, connection === self.connection else { return }
             switch state {
             case .ready:
-                self.onStatus("Connected, waiting for HELLO")
                 self.receive(on: connection)
             case .waiting(let error), .failed(let error):
                 self.drop("\(error)")
@@ -98,9 +95,10 @@ final class Link {
 
     private func drop(_ reason: String) {
         log("Connection dropped: \(reason)")
+        let wasReady = ready
         close()
         guard wanted else { return }
-        onStatus("Disconnected (\(reason)), retrying")
+        if wasReady { onLost(reason) }
         queue.asyncAfter(deadline: .now() + 2) { [weak self] in
             guard let self, self.wanted, self.connection == nil else { return }
             self.connect()
@@ -133,7 +131,7 @@ final class Link {
                 }
                 rx.removeFirst(11)
                 ready = true
-                onStatus("Connected to \(host)")
+                log("Connected to the tablet")
                 onHello()
             case 0x90:  // INPUT
                 guard rx.count >= 8 else { return nil }

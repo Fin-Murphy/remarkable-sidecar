@@ -1,6 +1,10 @@
 # rM2 Sidecar wire protocol, version 1
 
-This is plain TCP. The tablet listens on port 9876 (on USB networking that's `10.11.99.1:9876`), and the Mac connects as the client.
+This is plain TCP. The tablet server listens on `127.0.0.1:9876`. The Mac reaches it through an SSH port forward (`ssh -L 127.0.0.1:19876:127.0.0.1:9876 root@<tablet>`) and connects as the client.
+
+- This means the port isn't exposed on the tablet's USB or Wi-Fi interfaces.
+- USB and Wi-Fi use the same path.
+- The server can also bind a network address directly (`--listen 10.11.99.1`), and the protocol is the same either way.
 
 - All integers are **little-endian**.
 - Every message starts with a `u8` type byte.
@@ -95,4 +99,10 @@ A tablet that doesn't care can ignore it, but it still has to parse it (1 byte).
 - The Mac never queues frames. If the previous batch hasn't been handed to the kernel yet, the current frame is skipped. The next batch then contains every change since the last send. So a slow tablet sees fewer, larger updates rather than a growing backlog.
 - To keep this working, the tablet should read the socket promptly, for example on a separate thread from the e-ink refresh, and coalesce any rects that pile up.
 - The Mac sends nothing while the screen is idle.
-- The Mac enables TCP keepalive (idle 2 s, interval 1 s, 3 probes) to detect a pulled cable. It reconnects every 2 s until you choose Disconnect.
+- The Mac enables TCP keepalive (idle 2 s, interval 1 s, 3 probes) and reconnects every 2 s.
+  - If it can't reconnect within 40 s, it gives up and shows "Tablet session ended".
+  - It never restarts the tablet side on its own.
+- The tablet server ends its session in any of these cases:
+  - no Mac has been connected for `--grace` seconds (30 in the everyday session);
+  - it gets SIGTERM (the Mac's Disconnect or Quit);
+  - the power button is pressed.

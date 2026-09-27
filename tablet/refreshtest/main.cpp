@@ -125,8 +125,9 @@ int main(int argc, char *argv[]) {
         case 3: {  // a page of text
             p.fillRect(body, Qt::white);
             QFont f = p.font(); f.setPixelSize(30); p.setFont(f); p.setPen(Qt::black);
-            const QString line = "The quick brown fox jumps over the lazy dog. 0123456789 ";
-            for (int y = band + 50; y < size.height() - 20; y += 42) p.drawText(40, y, line + line);
+            const QString line = "The quick brown fox jumps over the lazy dog. 0123456789";
+            for (int y = band + 50; y < size.height() - 20; y += 42)
+                p.drawText(QRect(40, y - 34, size.width() - 80, 42), Qt::AlignLeft | Qt::TextSingleLine, line);
             break;
         }
         }

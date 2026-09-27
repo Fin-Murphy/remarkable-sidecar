@@ -1329,16 +1329,12 @@ CMakeFiles/refreshtest.dir/main.cpp.o
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/QQuickItem
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/QQuickPaintedItem
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/QQuickWindow
- /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/QSGImageNode
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qquickitem.h
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qquickpainteditem.h
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qquickwindow.h
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qsggeometry.h
- /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qsgimagenode.h
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qsgnode.h
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qsgrendererinterface.h
- /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qsgtexture.h
- /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qsgtexture_platform.h
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qtquick-config.h
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qtquickexports.h
  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qtquickglobal.h

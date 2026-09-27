@@ -1327,16 +1327,12 @@ CMakeFiles/refreshtest.dir/main.cpp.o: /src/refreshtest/main.cpp \
   /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/QQuickItem \
   /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/QQuickPaintedItem \
   /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/QQuickWindow \
-  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/QSGImageNode \
   /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qquickitem.h \
   /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qquickpainteditem.h \
   /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qquickwindow.h \
   /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qsggeometry.h \
-  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qsgimagenode.h \
   /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qsgnode.h \
   /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qsgrendererinterface.h \
-  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qsgtexture.h \
-  /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qsgtexture_platform.h \
   /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qtquick-config.h \
   /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qtquickexports.h \
   /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qtquickglobal.h \
@@ -1738,10 +1734,6 @@ refreshtest: /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/li
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/lib/libexpat.so.1:
 
-/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/lib/libQt6QmlWorkerScript.so.6:
-
-/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/lib/libQt6QmlModels.so.6:
-
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/c++/13.4.0/list:
 
 /opt/codex/rm2/sysroots/aarch64-codexsdk-linux/usr/share/cmake-3.31/Modules/Platform/Linker/Linux-GNU.cmake:
@@ -1805,10 +1797,6 @@ refreshtest: /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/li
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/lib/cmake/Qt6QmlWorkerScript/Qt6QmlWorkerScriptTargets.cmake:
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtCore/qsysinfo.h:
-
-/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/lib/libcap.so.2:
-
-/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/bits/fp-fast.h:
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/c++/13.4.0/bits/stl_multiset.h:
 
@@ -2462,10 +2450,6 @@ refreshtest_autogen/mocs_compilation.cpp:
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtGui/qpolygon.h:
 
-/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/lib/libc.so:
-
-/opt/codex/rm2/sysroots/aarch64-codexsdk-linux/usr/lib/cmake/Qt6HostInfo/Qt6HostInfoConfig.cmake:
-
 /opt/codex/rm2/sysroots/aarch64-codexsdk-linux/usr/share/cmake-3.31/Modules/CheckCXXCompilerFlag.cmake:
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qtquickglobal.h:
@@ -2674,6 +2658,10 @@ refreshtest_autogen/mocs_compilation.cpp:
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtCore/qline.h:
 
+/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/bits/fp-fast.h:
+
+/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/lib/libcap.so.2:
+
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtCore/qbytearrayalgorithms.h:
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/c++/13.4.0/bits/stl_function.h:
@@ -2779,8 +2767,6 @@ refreshtest_autogen/mocs_compilation.cpp:
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtCore/qpointer.h:
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtCore/qdarwinhelpers.h:
-
-/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qsgtexture_platform.h:
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtCore/qdatastream.h:
 
@@ -3546,8 +3532,6 @@ CMakeFiles/refreshtest.dir/refreshtest_autogen/mocs_compilation.cpp.o:
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/lib/cmake/Qt6Network/Qt6QTlsBackendOpenSSLPluginConfig.cmake:
 
-/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qsgimagenode.h:
-
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/lib/cmake/Qt6Network/Qt6NetworkVersionlessAliasTargets.cmake:
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/lib/cmake/Qt6Network/Qt6QNetworkManagerNetworkInformationPluginAdditionalTargetInfo.cmake:
@@ -3685,6 +3669,10 @@ CMakeFiles/refreshtest.dir/refreshtest_autogen/mocs_compilation.cpp.o:
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/lib/cmake/Qt6Qml/QmlPlugins/Qt6qmlsettingspluginTargets.cmake:
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/lib/cmake/Qt6Qml/QmlPlugins/Qt6qmlshapespluginAdditionalTargetInfo.cmake:
+
+/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/lib/cmake/Qt6Qml/QmlPlugins/Qt6qmllocalstoragepluginTargets.cmake:
+
+/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/lib/cmake/Qt6Qml/QmlPlugins/Qt6qmlwebsocketsConfig.cmake:
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/lib/cmake/Qt6Qml/QmlPlugins/Qt6qmlwebsocketsTargets-minsizerel.cmake:
 
@@ -3952,14 +3940,6 @@ refreshtest_autogen/moc_predefs.h:
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtCore/qtmochelpers.h:
 
-/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/lib/cmake/Qt6Qml/QmlPlugins/Qt6qmllocalstoragepluginTargets.cmake:
-
-/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/lib/cmake/Qt6Qml/QmlPlugins/Qt6qmlwebsocketsConfig.cmake:
-
-/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/QSGImageNode:
-
-/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/QtQuick/qsgtexture.h:
-
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/include/bits/flt-eval-method.h:
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/usr/lib/cmake/Qt6ExamplesAssetDownloaderPrivate/Qt6ExamplesAssetDownloaderPrivateConfigVersion.cmake:
@@ -3993,3 +3973,11 @@ refreshtest_autogen/include/main.moc:
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/lib/arm-remarkable-linux-gnueabi/13.4.0/libgcc.a:
 
 /opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/lib/crti.o:
+
+/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/lib/libQt6QmlModels.so.6:
+
+/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/lib/libQt6QmlWorkerScript.so.6:
+
+/opt/codex/rm2/sysroots/aarch64-codexsdk-linux/usr/lib/cmake/Qt6HostInfo/Qt6HostInfoConfig.cmake:
+
+/opt/codex/rm2/sysroots/cortexa7hf-neon-remarkable-linux-gnueabi/lib/libc.so:
