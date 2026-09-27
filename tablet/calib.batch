@@ -1,0 +1,2 @@
+# phase 4 calibration: server with pen/touch input; test_sender.py --calibrate plays the Mac
+300 ./rm2sidecar

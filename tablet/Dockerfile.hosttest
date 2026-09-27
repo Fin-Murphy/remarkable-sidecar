@@ -1,0 +1,6 @@
+# Plain Linux build of the tablet server for offline protocol tests (no epaper backend).
+FROM debian:trixie-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        g++ cmake make qt6-base-dev qt6-declarative-dev zlib1g-dev fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /src

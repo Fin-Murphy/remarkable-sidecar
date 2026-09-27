@@ -1,0 +1,5 @@
+# Hashes of file build rules.
+7ebcf2e445dbd994084c97cabd03e990 .qt/qml_imports/refreshtest_build.cmake
+52cc708ed9c0bf256dcbbd41fa180664 CMakeFiles/refreshtest_autogen
+52cc708ed9c0bf256dcbbd41fa180664 CMakeFiles/refreshtest_qmlimportscan
+845d53b962092a388ccb1b2682a4f24f refreshtest_autogen/timestamp

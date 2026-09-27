@@ -1,0 +1,5 @@
+/src/server/build-host/CMakeFiles/rm2sidecar.dir
+/src/server/build-host/CMakeFiles/edit_cache.dir
+/src/server/build-host/CMakeFiles/rebuild_cache.dir
+/src/server/build-host/CMakeFiles/rm2sidecar_autogen_timestamp_deps.dir
+/src/server/build-host/CMakeFiles/rm2sidecar_autogen.dir
