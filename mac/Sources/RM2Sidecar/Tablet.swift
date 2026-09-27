@@ -78,7 +78,7 @@ final class Tablet {
         closeTunnel()
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
-        process.arguments = Self.options + ["-N", "-o", "ExitOnForwardFailure=yes",
+        process.arguments = options + ["-N", "-o", "ExitOnForwardFailure=yes",
                                             "-L", "127.0.0.1:\(localPort):127.0.0.1:\(remotePort)", "root@\(host)"]
         let errors = Pipe()
         process.standardError = errors
@@ -109,17 +109,19 @@ final class Tablet {
 
     // MARK: - ssh
 
-    /// The tablet's host key is known under 10.11.99.1 (USB). Checking every address against that
+    /// The tablet's host key is known under its USB address. Checking every address against that
     /// entry keeps host-key verification strict when the tablet is reached another way (Wi-Fi).
-    private static let options = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=5",
-                                  "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=3",
-                                  "-o", "HostKeyAlias=10.11.99.1"]
+    private var options: [String] {
+        ["-o", "BatchMode=yes", "-o", "ConnectTimeout=5",
+         "-o", "ServerAliveInterval=5", "-o", "ServerAliveCountMax=3",
+         "-o", "HostKeyAlias=\(usbHost)"]
+    }
 
     /// Runs a remote command. Returns the exit status (nil on timeout) and stdout+stderr.
     private func ssh(_ host: String, _ command: [String], timeout: TimeInterval) -> (Int32?, String) {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
-        process.arguments = Self.options + ["root@\(host)"] + command
+        process.arguments = options + ["root@\(host)"] + command
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe

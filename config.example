@@ -1,0 +1,38 @@
+# rM2 Sidecar settings for your machine.
+#
+#   cp config.example config.local     # config.local is git-ignored; edit that copy
+#
+# Read by tablet/build.sh, tablet/deploy.sh and mac/build-app.sh. Everything here is optional:
+# a commented-out line uses the default shown. mac/build-app.sh also bakes the three connection
+# settings into the app, so they apply when you open it from Finder. Rebuild the app after
+# changing them.
+
+# --- Connection -------------------------------------------------------------------------------
+
+# The tablet's USB address. Every reMarkable 2 uses 10.11.99.1.
+#RM2_HOST=10.11.99.1
+
+# The tablet's Wi-Fi address (only used if you enable SSH over Wi-Fi; see README).
+# Default: try remarkable.local, then the last Wi-Fi address the tablet reported. Setting this
+# turns that fallback off, so only set it if remarkable.local doesn't work on your network.
+#RM2_WIFI_HOST=192.168.1.50
+
+# The tablet server's port. It listens on the tablet's loopback only and is reached through SSH.
+#RM2_PORT=9876
+
+# --- Building the tablet side ------------------------------------------------------------------
+
+# Folder holding the reMarkable SDK installer (from https://developer.remarkable.com/links).
+#RM2_SDK_DIR="$HOME/rm2-sdk"
+
+# The SDK installer's file name. It must match your tablet's OS version (Settings > General >
+# About) and your Mac's CPU: aarch64 for Apple Silicon, x86_64 for Intel.
+# Default: the OS 3.28.0.172 installer for your Mac's CPU.
+#RM2_SDK_FILE=remarkable-production-image-5.8.203-rm2-public-aarch64-toolchain.sh
+
+# --- Building the Mac app ----------------------------------------------------------------------
+
+# Code-signing identity. Default: your "Apple Development" identity if you have one, otherwise
+# ad hoc (then macOS asks for Screen Recording and Accessibility again after every rebuild).
+# List yours with: security find-identity -v -p codesigning
+#SIGN_IDENTITY="Apple Development: Your Name (TEAMID1234)"
