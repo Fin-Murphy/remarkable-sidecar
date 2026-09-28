@@ -4,25 +4,30 @@ import CPrivate
 let displayWidth = 1404
 let displayHeight = 1872
 
-/// A 1404x1872 virtual display (reMarkable 2 panel, 226 dpi). Removed when this object is
-/// released or the process exits.
+/// A virtual display for the reMarkable 2 panel (1404x1872, 226 dpi), portrait or landscape
+/// (1872x1404). Removed when this object is released or the process exits.
 final class VirtualDisplay {
-    /// "Looks like" sizes offered in System Settings > Displays, all HiDPI (2 pixels per point).
+    /// "Looks like" sizes offered in System Settings > Displays, all HiDPI (2 pixels per point),
+    /// given for portrait; landscape offers the same sizes turned sideways.
     /// At 1x a 10" 1404x1872 panel makes text tiny, so the first one (exactly 2x) is selected at
     /// launch; the smaller ones make text even larger (the capture scales their 1200x1600 or
     /// 1080x1440 backing up to the tablet's pixels, slightly softer). Native 1x stays available.
     static let pointSizes = [(702, 936), (600, 800), (540, 720)]
 
     private let display: CGVirtualDisplay
+    private var orientation: Orientation
+    private var selecting = 0  // bumps per mode selection, so an older one's retries stop
 
     var displayID: CGDirectDisplayID { display.displayID }
 
-    init() {
+    init(orientation: Orientation) {
+        self.orientation = orientation
         let descriptor = CGVirtualDisplayDescriptor()
         descriptor.setDispatchQueue(DispatchQueue.main)
         descriptor.name = "reMarkable 2"
-        descriptor.maxPixelsWide = UInt32(displayWidth)
-        descriptor.maxPixelsHigh = UInt32(displayHeight)
+        // Room for both orientations.
+        descriptor.maxPixelsWide = UInt32(max(displayWidth, displayHeight))
+        descriptor.maxPixelsHigh = UInt32(max(displayWidth, displayHeight))
         let mmPerPixel = 25.4 / 226
         descriptor.sizeInMillimeters = CGSize(width: Double(displayWidth) * mmPerPixel,
                                               height: Double(displayHeight) * mmPerPixel)
@@ -31,34 +36,69 @@ final class VirtualDisplay {
         descriptor.serialNum = 0x0001
 
         display = CGVirtualDisplay(descriptor: descriptor)
+        log("Virtual display created, id \(display.displayID)")
+        applyModes()
+        selectMode(size: 0, attempts: 20)
+    }
 
+    /// Switches between portrait and landscape modes, keeping the chosen text size.
+    func setOrientation(_ new: Orientation) {
+        let wasLandscape = orientation.isLandscape
+        orientation = new
+        guard new.isLandscape != wasLandscape else { return }  // same modes; only the frames turn the other way
+        let size = currentSize()
+        applyModes()
+        selectMode(size: size, attempts: 20)
+    }
+
+    /// Mode sizes in points for the current orientation: pointSizes, then native 1x.
+    private var modeSizes: [(width: Int, height: Int)] {
+        (Self.pointSizes + [(displayWidth, displayHeight)]).map { orientation.isLandscape ? ($0.1, $0.0) : ($0.0, $0.1) }
+    }
+
+    private func applyModes() {
         let settings = CGVirtualDisplaySettings()
         settings.hiDPI = 1
-        settings.modes = Self.pointSizes.map { CGVirtualDisplayMode(width: UInt($0.0), height: UInt($0.1), refreshRate: 60) }
-            + [CGVirtualDisplayMode(width: UInt(displayWidth), height: UInt(displayHeight), refreshRate: 60)]
+        settings.modes = modeSizes.map { CGVirtualDisplayMode(width: UInt($0.width), height: UInt($0.height), refreshRate: 60) }
         if !display.apply(settings) {
             log("Virtual display: applySettings failed")
         }
-        log("Virtual display created, id \(display.displayID)")
-        selectDefaultMode(attempts: 20)
     }
 
-    /// Switches to the first HiDPI size. The modes only become visible shortly after creation,
-    /// so this retries for a few seconds.
-    private func selectDefaultMode(attempts: Int) {
-        let (w, h) = Self.pointSizes[0]
+    /// The index in modeSizes of the current mode (whichever orientation it has), or 0.
+    private func currentSize() -> Int {
+        guard let mode = CGDisplayCopyDisplayMode(display.displayID) else { return 0 }
+        if mode.pixelWidth == mode.width { return Self.pointSizes.count }  // native 1x
+        let portrait = (min(mode.width, mode.height), max(mode.width, mode.height))
+        return Self.pointSizes.firstIndex { $0 == portrait } ?? 0
+    }
+
+    /// Switches to modeSizes[size] (HiDPI, except native). New modes only become visible shortly
+    /// after they are applied, so this retries for a few seconds.
+    private func selectMode(size: Int, attempts: Int) {
+        selecting += 1
+        selectMode(size: size, attempts: attempts, selection: selecting)
+    }
+
+    private func selectMode(size: Int, attempts: Int, selection: Int) {
+        guard selection == selecting else { return }
+        let (w, h) = modeSizes[size]
+        let scale = size == Self.pointSizes.count ? 1 : 2
+        let name = "\(w)x\(h)\(scale == 2 ? " HiDPI" : "")"
         let options = [kCGDisplayShowDuplicateLowResolutionModes: true] as CFDictionary
         let modes = CGDisplayCopyAllDisplayModes(display.displayID, options) as? [CGDisplayMode] ?? []
-        if let mode = modes.first(where: { $0.width == w && $0.height == h && $0.pixelWidth == 2 * w }) {
+        if let mode = modes.first(where: { $0.width == w && $0.height == h && $0.pixelWidth == scale * w }) {
             var config: CGDisplayConfigRef?
             CGBeginDisplayConfiguration(&config)
             CGConfigureDisplayWithDisplayMode(config, display.displayID, mode, nil)
             let error = CGCompleteDisplayConfiguration(config, .forSession)
-            log("Virtual display mode \(w)x\(h) HiDPI: \(error == .success ? "set" : "failed (\(error.rawValue))")")
+            log("Virtual display mode \(name): \(error == .success ? "set" : "failed (\(error.rawValue))")")
         } else if attempts > 0 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in self?.selectDefaultMode(attempts: attempts - 1) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+                self?.selectMode(size: size, attempts: attempts - 1, selection: selection)
+            }
         } else {
-            log("Virtual display mode \(w)x\(h) HiDPI not available")
+            log("Virtual display mode \(name) not available")
         }
     }
 

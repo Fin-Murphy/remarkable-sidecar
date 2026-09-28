@@ -1,9 +1,10 @@
 import CoreMedia
 import ScreenCaptureKit
 
-/// Captures one display with ScreenCaptureKit and delivers 8-bit grayscale frames
-/// (displayWidth x displayHeight, row-major, no padding). Uses the luma plane of a
-/// full-range 4:2:0 YCbCr buffer, so no color conversion is done here.
+/// Captures one display with ScreenCaptureKit and delivers 8-bit grayscale frames in the tablet's
+/// panel orientation (displayWidth x displayHeight, row-major, no padding), turned from the display's
+/// `orientation`. Uses the luma plane of a full-range 4:2:0 YCbCr buffer, so no color conversion is
+/// done here.
 ///
 /// Control Center's menu-bar items (clock, Wi-Fi, battery, sound) are left out of the capture:
 /// a clock showing seconds would otherwise redraw the e-ink screen every second and the display
@@ -19,12 +20,15 @@ final class Capture: NSObject, SCStreamOutput, SCStreamDelegate {
     private var stream: SCStream?
     private var displayID: CGDirectDisplayID = 0
     private var fps = 4
+    private var orientation: Orientation  // on `queue`
     private var lastCallback = Date()  // on `queue`
     private var restarting = false     // on `queue`
     private static let stallAfter: TimeInterval = 3
 
-    init(queue: DispatchQueue, onFrame: @escaping ([UInt8]) -> Void, onError: @escaping (String) -> Void) {
+    init(queue: DispatchQueue, orientation: Orientation,
+         onFrame: @escaping ([UInt8]) -> Void, onError: @escaping (String) -> Void) {
         self.queue = queue
+        self.orientation = orientation
         self.onFrame = onFrame
         self.onError = onError
     }
@@ -47,14 +51,7 @@ final class Capture: NSObject, SCStreamOutput, SCStreamDelegate {
                           userInfo: [NSLocalizedDescriptionKey: "virtual display not found by ScreenCaptureKit"])
         }
 
-        let config = SCStreamConfiguration()
-        config.width = displayWidth
-        config.height = displayHeight
-        config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(fps))
-        config.pixelFormat = kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
-        config.queueDepth = 3
-        config.showsCursor = true
-
+        let config = configuration(for: queue.sync { orientation })
         let controlCenter = content.applications.filter { $0.bundleIdentifier == "com.apple.controlcenter" }
         let filter = SCContentFilter(display: display, excludingApplications: controlCenter, exceptingWindows: [])
         let stream = SCStream(filter: filter, configuration: config, delegate: self)
@@ -70,6 +67,27 @@ final class Capture: NSObject, SCStreamOutput, SCStreamDelegate {
                 log("Capture: test hook stopping the stream silently")
                 try? await stream.stopCapture()
             }
+        }
+    }
+
+    private func configuration(for orientation: Orientation) -> SCStreamConfiguration {
+        let config = SCStreamConfiguration()
+        (config.width, config.height) = orientation.displaySize
+        config.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(fps))
+        config.pixelFormat = kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
+        config.queueDepth = 3
+        config.showsCursor = true
+        return config
+    }
+
+    /// Call on `queue`, after the display itself has been switched. Frames are skipped until the
+    /// display's mode matches, so a half-switched frame never reaches the tablet.
+    func setOrientation(_ new: Orientation) {
+        let resize = new.isLandscape != orientation.isLandscape
+        orientation = new
+        guard resize, let stream else { return }  // no stream yet (or restarting): start() uses the new one
+        stream.updateConfiguration(configuration(for: new)) { error in
+            if let error { log("Capture: resizing for \(new.rawValue) failed: \(error.localizedDescription)") }
         }
     }
 
@@ -112,17 +130,12 @@ final class Capture: NSObject, SCStreamOutput, SCStreamDelegate {
         let width = CVPixelBufferGetWidthOfPlane(pixels, 0)
         let height = CVPixelBufferGetHeightOfPlane(pixels, 0)
         let stride = CVPixelBufferGetBytesPerRowOfPlane(pixels, 0)
-        guard width == displayWidth, height == displayHeight,
+        let bounds = CGDisplayBounds(displayID)
+        guard (width, height) == orientation.displaySize, (bounds.width > bounds.height) == orientation.isLandscape,
               let base = CVPixelBufferGetBaseAddressOfPlane(pixels, 0)?.assumingMemoryBound(to: UInt8.self)
         else { return }
 
-        var gray = [UInt8](repeating: 0, count: width * height)
-        gray.withUnsafeMutableBufferPointer { dst in
-            for y in 0..<height {
-                memcpy(dst.baseAddress! + y * width, base + y * stride, width)
-            }
-        }
-        onFrame(gray)
+        onFrame(orientation.panelFrame(from: base, stride: stride))
     }
 
     func stream(_ stream: SCStream, didStopWithError error: Error) {

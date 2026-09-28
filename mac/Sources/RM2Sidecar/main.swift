@@ -42,12 +42,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let config = Config.parse()
     var display: VirtualDisplay!
     var sidecar: Sidecar!
-    var menuBar: MenuBar!
+    var appWindow: AppWindow!
     var screenObserver: NSObjectProtocol?
     var signalSources: [DispatchSourceSignal] = []
 
+    private static let orientationKey = "orientation"
+
     func applicationDidFinishLaunching(_ notification: Notification) {
-        display = VirtualDisplay()
+        let orientation = Orientation(rawValue: UserDefaults.standard.string(forKey: Self.orientationKey) ?? "") ?? .portrait
+        display = VirtualDisplay(orientation: orientation)
         // The display's NSScreen appears asynchronously.
         if !display.setWhiteDesktop() {
             screenObserver = NotificationCenter.default.addObserver(
@@ -58,11 +61,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.screenObserver = nil
             }
         }
-        sidecar = Sidecar(displayID: display.displayID, config: config)
-        menuBar = MenuBar(sidecar: sidecar)
+        sidecar = Sidecar(displayID: display.displayID, config: config, orientation: orientation)
+        appWindow = AppWindow(sidecar: sidecar, orientation: orientation)
         sidecar.onState = { [weak self] state in
-            DispatchQueue.main.async { self?.menuBar.setState(state) }
+            DispatchQueue.main.async { self?.appWindow.setState(state) }
         }
+        appWindow.onOrientation = { [weak self] orientation in
+            guard let self else { return }
+            log("Orientation: \(orientation.rawValue)")
+            UserDefaults.standard.set(orientation.rawValue, forKey: Self.orientationKey)
+            self.display.setOrientation(orientation)
+            self.sidecar.setOrientation(orientation)
+        }
+        appWindow.show()
+        NSApp.activate()
         Permissions.promptIfNeeded()
         sidecar.start()
         if config.connectAtLaunch { sidecar.connect() }
@@ -109,8 +121,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
+/// The standard app menu (About, Hide, Quit) and Window menu (Minimize, Close).
+func makeMainMenu() -> NSMenu {
+    let appMenu = NSMenu()
+    appMenu.addItem(withTitle: "About rM2 Sidecar", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+    appMenu.addItem(.separator())
+    appMenu.addItem(withTitle: "Hide rM2 Sidecar", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+    appMenu.addItem(withTitle: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
+        .keyEquivalentModifierMask = [.command, .option]
+    appMenu.addItem(withTitle: "Show All", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
+    appMenu.addItem(.separator())
+    appMenu.addItem(withTitle: "Quit rM2 Sidecar", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+
+    let windowMenu = NSMenu(title: "Window")
+    windowMenu.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+    windowMenu.addItem(withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+
+    let menu = NSMenu()
+    for submenu in [appMenu, windowMenu] {
+        menu.addItem(withTitle: submenu.title, action: nil, keyEquivalent: "").submenu = submenu
+    }
+    return menu
+}
+
 let app = NSApplication.shared
-app.setActivationPolicy(.accessory)
+app.setActivationPolicy(.regular)
+app.mainMenu = makeMainMenu()
 let delegate = AppDelegate()
 app.delegate = delegate
 app.run()

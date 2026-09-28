@@ -12,6 +12,15 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
 cp .build/release/RM2Sidecar "$APP/Contents/MacOS/"
 cp Info.plist "$APP/Contents/"
+# The icon is drawn by make-icon.swift; redrawn only when that script changes.
+ICNS=.build/AppIcon.icns
+if [ ! "$ICNS" -nt make-icon.swift ]; then
+    rm -rf .build/AppIcon.iconset
+    swift make-icon.swift .build/AppIcon.iconset
+    iconutil -c icns .build/AppIcon.iconset -o "$ICNS"
+fi
+mkdir -p "$APP/Contents/Resources"
+cp "$ICNS" "$APP/Contents/Resources/"
 for key in RM2_HOST RM2_WIFI_HOST RM2_PORT; do
     eval "value=\${$key:-}"
     [ -n "$value" ] || continue

@@ -4,13 +4,15 @@ import ApplicationServices
 /// Turns tablet INPUT events into CGEvents on the virtual display. Needs Accessibility.
 final class InputInjector {
     private let displayID: CGDirectDisplayID
+    var orientation: Orientation
     private(set) var penDown = false
     private var lastDown: (time: Date, point: CGPoint)?
     private var clickCount = 1
     private var warnedNoAccess = false
 
-    init(displayID: CGDirectDisplayID) {
+    init(displayID: CGDirectDisplayID, orientation: Orientation) {
         self.displayID = displayID
+        self.orientation = orientation
     }
 
     func handle(_ event: InputEvent) {
@@ -21,12 +23,13 @@ final class InputInjector {
         }
         warnedNoAccess = false
 
-        // Tablet pixels -> global points. Works for both the 1x and the HiDPI mode.
+        // Tablet panel pixels -> display pixels -> global points. Works for both the 1x and the HiDPI modes.
         let bounds = CGDisplayBounds(displayID)
-        let x = Double(min(max(event.x, 0), displayWidth - 1)) + 0.5
-        let y = Double(min(max(event.y, 0), displayHeight - 1)) + 0.5
-        let point = CGPoint(x: bounds.minX + x * bounds.width / Double(displayWidth),
-                            y: bounds.minY + y * bounds.height / Double(displayHeight))
+        let pixel = orientation.displayPoint(panelX: min(max(event.x, 0), displayWidth - 1),
+                                             panelY: min(max(event.y, 0), displayHeight - 1))
+        let size = orientation.displaySize
+        let point = CGPoint(x: bounds.minX + (Double(pixel.x) + 0.5) * bounds.width / Double(size.width),
+                            y: bounds.minY + (Double(pixel.y) + 0.5) * bounds.height / Double(size.height))
 
         switch event.kind {
         case .hoverMove, .penMove:

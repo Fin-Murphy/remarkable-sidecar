@@ -44,7 +44,7 @@ final class Tablet {
     func startSession() -> String? {
         var unreachable: [String] = []
         for path in paths {
-            let (status, output) = ssh(path.host, ["sh /home/root/rm2sidecar/start.sh"], timeout: 45)
+            let (status, output) = ssh(path.host, ["sh /home/root/rm2sidecar/start.sh"], timeout: 90)
             if let match = output.firstMatch(of: try! Regex(#"WIFI (\d+\.\d+\.\d+\.\d+)"#)) {
                 UserDefaults.standard.set(String(match.output[1].substring ?? ""), forKey: Self.lastWifiKey)
             }
@@ -75,7 +75,7 @@ final class Tablet {
     /// Opens the port forward. Returns nil if it is up, else a reason to show.
     func openTunnel() -> String? {
         guard let host = path?.host else { return "No tablet session" }
-        closeTunnel()
+        killOrphanedTunnels()
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
         process.arguments = options + ["-N", "-o", "ExitOnForwardFailure=yes",
@@ -83,9 +83,22 @@ final class Tablet {
         let errors = Pipe()
         process.standardError = errors
         process.standardOutput = FileHandle.nullDevice
-        do { try process.run() } catch { return "Couldn't run ssh: \(error.localizedDescription)" }
-        // A failing forward (port busy, host unreachable) exits within a moment.
-        for _ in 0..<15 where process.isRunning { Thread.sleep(forTimeInterval: 0.1) }
+        // Replace the previous tunnel and register this one as it starts, in one step, so a concurrent
+        // closeTunnel() (Disconnect, Quit) or openTunnel() always finds it. Otherwise it could leak and
+        // keep holding localPort after the app quits.
+        do {
+            try lock.withLock {
+                tunnel?.terminate()
+                try process.run()
+                tunnel = process
+            }
+        } catch { return "Couldn't run ssh: \(error.localizedDescription)" }
+        // Wait until ssh listens on localPort (after connecting and logging in, which over Wi-Fi can
+        // take a few seconds), or exits because it can't (port busy, host unreachable, key refused).
+        let deadline = Date() + 10
+        while process.isRunning && !isListening(process.processIdentifier) && Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.1)
+        }
         guard process.isRunning else {
             let text = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
             if text.contains("Address already in use") || text.contains("cannot listen") {
@@ -93,8 +106,35 @@ final class Tablet {
             }
             return Self.explainSSHFailure(text)
         }
-        lock.withLock { tunnel = process }
+        guard isListening(process.processIdentifier) else {
+            process.terminate()
+            return Self.noAnswer
+        }
         return nil
+    }
+
+    /// Whether process `pid` listens on localPort (lsof exits with 0 when it finds such a socket).
+    private func isListening(_ pid: Int32) -> Bool {
+        let lsof = Process()
+        lsof.executableURL = URL(fileURLWithPath: "/usr/sbin/lsof")
+        lsof.arguments = ["-nP", "-a", "-p", "\(pid)", "-iTCP:\(localPort)", "-sTCP:LISTEN", "-t"]
+        lsof.standardOutput = FileHandle.nullDevice
+        lsof.standardError = FileHandle.nullDevice
+        guard (try? lsof.run()) != nil else { return false }
+        lsof.waitUntilExit()
+        return lsof.terminationStatus == 0
+    }
+
+    /// A tunnel left by an earlier run of the app that ended without cleaning up (force quit, crash)
+    /// keeps localPort, so a new one can't forward it. Such an ssh has been reparented to launchd
+    /// (parent pid 1); this run's tunnels never are.
+    private func killOrphanedTunnels() {
+        let pkill = Process()
+        pkill.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
+        pkill.arguments = ["-P", "1", "-f", "^/usr/bin/ssh .* -L 127\\.0\\.0\\.1:\(localPort):"]
+        guard (try? pkill.run()) != nil else { return }
+        pkill.waitUntilExit()
+        if pkill.terminationStatus == 0 { log("Ended an SSH tunnel left over from an earlier run") }
     }
 
     var tunnelIsOpen: Bool { lock.withLock { tunnel?.isRunning ?? false } }
@@ -159,7 +199,7 @@ final class Tablet {
         return unreachable
     }
 
-    /// Turns start.sh's "ERROR: ..." (usually a run.sh guard) into a sentence for the menu.
+    /// Turns start.sh's "ERROR: ..." (usually a run.sh guard) into a sentence for the window.
     private static func explainStartFailure(_ text: String) -> String {
         func number(after pattern: String) -> Substring? {
             guard let regex = try? Regex(pattern + #"(\d+)"#), let match = text.firstMatch(of: regex) else { return nil }

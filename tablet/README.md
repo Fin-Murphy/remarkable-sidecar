@@ -48,9 +48,10 @@ docker rm -f rm2srv
 Normally, the Mac app's **Connect** starts everything:
 
 1. It runs `ssh root@<tablet> sh /home/root/rm2sidecar/start.sh`.
-   - `start.sh` starts `run.sh -f session.batch`, or reuses a session that's already running.
+   - `start.sh` starts `run.sh -f session.batch`, or reuses a session whose server is already listening.
+   - One `start.sh` runs at a time, so two quick Connects share one session. If a session is still ending (just after Disconnect), it waits up to 15 s for xochitl to come back before starting a new one.
    - It prints `READY` once the server listens, or `ERROR: <reason>` if one of run.sh's guards refuses.
-2. It opens `ssh -N -L 127.0.0.1:19876:127.0.0.1:9876` and connects through that.
+2. It opens `ssh -N -L 127.0.0.1:19876:127.0.0.1:9876`, waits until that forward listens, and connects through it.
 
 `session.batch` runs `rm2sidecar --listen 127.0.0.1 --grace 30` with an 8-hour absolute backstop. The server listens on loopback only, so it isn't reachable on USB or Wi-Fi without SSH.
 

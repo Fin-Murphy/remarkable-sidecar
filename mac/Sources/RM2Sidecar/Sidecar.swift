@@ -39,8 +39,11 @@ final class Sidecar {
     private static let refreshAfter: TimeInterval = 2  // idle time before FULL_REFRESH
     private static let giveUpAfter: TimeInterval = 40  // longer than the tablet's 30 s grace
 
-    init(displayID: CGDirectDisplayID, config: Config) {
+    private var orientation: Orientation  // on `queue`
+
+    init(displayID: CGDirectDisplayID, config: Config, orientation: Orientation) {
         self.displayID = displayID
+        self.orientation = orientation
         if config.launch {
             let tablet = Tablet(usbHost: config.host, wifiOverride: config.wifiHost, remotePort: config.port)
             self.tablet = tablet
@@ -49,7 +52,7 @@ final class Sidecar {
             tablet = nil
             link = Link(host: config.host, port: config.port, queue: queue)
         }
-        input = InputInjector(displayID: displayID)
+        input = InputInjector(displayID: displayID, orientation: orientation)
 
         link.onHello = { [weak self] in
             guard let self else { return }
@@ -77,7 +80,7 @@ final class Sidecar {
 
     /// Starts capturing. Without a tablet launcher (mock testing) it also connects right away.
     func start() {
-        let capture = Capture(queue: queue,
+        let capture = Capture(queue: queue, orientation: queue.sync { orientation },
                               onFrame: { [weak self] in self?.latest = $0; self?.pump() },
                               onError: { [weak self] message in
                                   log(message)
@@ -93,6 +96,24 @@ final class Sidecar {
             }
         }
         if tablet == nil { connect() }
+    }
+
+    /// Call after the virtual display has been switched. The next frame is sent whole.
+    func setOrientation(_ new: Orientation) {
+        queue.async { [self] in
+            if new.isLandscape && orientation.isLandscape {
+                // Only the direction changed: the display doesn't, so no new frame comes. The two
+                // landscape panel frames are 180° apart, which for a row-major frame is reversing it.
+                latest = latest.map { Array($0.reversed()) }
+            } else {
+                latest = nil  // the display's mode changes; its next frame comes in the new orientation
+            }
+            orientation = new
+            input.orientation = new
+            capture?.setOrientation(new)
+            sent = nil
+            pump()
+        }
     }
 
     private func fail(_ message: String) {
@@ -114,7 +135,11 @@ final class Sidecar {
             }
             state = .starting("Starting tablet…")
             DispatchQueue.global().async { [self] in
-                let problem = tablet.startSession() ?? tablet.openTunnel()
+                var problem = tablet.startSession()
+                // If Disconnect was chosen meanwhile, don't open a tunnel; a newer Connect opens its own.
+                if problem == nil, queue.sync(execute: { generation == self.generation }) {
+                    problem = tablet.openTunnel()
+                }
                 queue.async { [self] in
                     guard generation == self.generation else { return }  // Disconnect was chosen meanwhile
                     if let problem {

@@ -1,6 +1,6 @@
 # rM2 Sidecar (Mac side)
 
-rM2 Sidecar is a menu-bar app. It creates a 1404x1872 virtual display, captures it with ScreenCaptureKit at 4 fps in grayscale, and streams the dirty rects to the tablet. It also turns tablet input into mouse events. The wire format is in [`../docs/PROTOCOL.md`](../docs/PROTOCOL.md). Setup and everyday use are in the [top-level README](../README.md); this file is for development.
+rM2 Sidecar is a Dock app with one small window (`AppWindow.swift`): the session state, Connect/Disconnect, and a Grant… button for each missing permission. Closing the window quits. It creates a 1404x1872 virtual display, captures it with ScreenCaptureKit at 4 fps in grayscale, and streams the dirty rects to the tablet. It also turns tablet input into mouse events. The wire format is in [`../docs/PROTOCOL.md`](../docs/PROTOCOL.md). Setup and everyday use are in the [top-level README](../README.md); this file is for development.
 
 ## Build
 
@@ -13,10 +13,12 @@ swift build              # debug build, for a compile check
 
 `build-app.sh` also bakes `RM2_HOST`, `RM2_WIFI_HOST` and `RM2_PORT` from `../config.local` into the app's `LSEnvironment`, so they apply when the app is opened from Finder. Command-line flags still override them.
 
+The app icon is drawn in code by `make-icon.swift`; `build-app.sh` turns it into `AppIcon.icns` (with `iconutil`) and only redraws it when that script changes.
+
 ## Run
 
 ```sh
-open build/RM2Sidecar.app                                                # then choose Connect in the rM2 menu
+open build/RM2Sidecar.app                                                # then click Connect in its window
 open build/RM2Sidecar.app --args --connect                               # connect right away
 open build/RM2Sidecar.app --args --host 127.0.0.1 --no-launch            # against the mock (no SSH)
 open build/RM2Sidecar.app --stdout /tmp/rm2.log --args --connect         # with a log file
@@ -25,7 +27,7 @@ open build/RM2Sidecar.app --stdout /tmp/rm2.log --args --connect         # with 
 - **Connect** starts the tablet side over SSH (`/usr/bin/ssh`, key auth, BatchMode), tunnels to it, and connects.
   - The tablet's host key is checked against the entry for `10.11.99.1`, whichever address is used.
   - **Disconnect** or **Quit** ends the tablet session, and the reMarkable UI comes back within a few seconds.
-- **Menu states:** Disconnected / Starting tablet… / Connected / Reconnecting… / Error: *reason*.
+- **Window states:** Disconnected / Starting tablet… / Connected / Reconnecting… / *the error's reason*.
   - Guard refusals are shown in words, for example "Tablet busy (its screen app restarted too often). Try again in 90 s".
   - The app never retries starting the tablet on its own.
 - **Options:**
@@ -42,6 +44,10 @@ open build/RM2Sidecar.app --stdout /tmp/rm2.log --args --connect         # with 
 - **Text size.** At launch the display is set to "looks like 702 × 936" (HiDPI, 2x). That's the full 1404 × 1872 pixels, drawn at double size.
   - For bigger text, pick 600 × 800 or 540 × 720 in System Settings → Displays → reMarkable 2. These are slightly softer because they're scaled.
   - 1404 × 1872 (1x) is available but tiny.
+- **Orientation** (`Orientation.swift`): Portrait, Landscape ↓ or Landscape ↑ (where the tablet's thick edge goes), chosen in the window and saved in the app's defaults (`orientation`).
+  - The tablet side doesn't know about it: it always gets portrait 1404 × 1872 frames and sends input in those coordinates.
+  - In landscape the virtual display offers the same sizes turned sideways (936 × 702 etc.), keeping the chosen one. Each captured 1872 × 1404 frame is turned 90° into the panel's orientation before diffing. Input is turned back with the same mapping, so a tap lands on what's drawn under it.
+  - Switching sends the next frame whole. Frames are skipped until the display's mode has switched, so a half-switched frame never reaches the tablet.
 
 ## Permissions
 

@@ -17,6 +17,12 @@ fi
 TOTAL=0
 for t in $(echo "$BATCH" | cut -d' ' -f1); do TOTAL=$((TOTAL + t)); done
 
+# One session at a time: a second run.sh would restart xochitl under the running app when it ends.
+# Everything a session starts (apps, time limit, watchdog) inherits the lock, so the kernel releases
+# it only once the last of them has exited, after xochitl is back.
+exec 8>>/home/root/rm2sidecar/.session.lock
+flock -n 8 || { echo "another session is still running or ending, not running"; exit 6; }
+
 battery=$(cat /sys/class/power_supply/*/capacity 2>/dev/null | head -n 1)
 if [ "${battery:-0}" -le 30 ]; then echo "battery ${battery}% <= 30%, not running"; exit 3; fi
 

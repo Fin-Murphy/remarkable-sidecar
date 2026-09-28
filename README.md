@@ -133,25 +133,26 @@ permissions again after every rebuild.
 open mac/build/RM2Sidecar.app
 ```
 
-An **rM2 ○** item appears in the menu bar, and a new "reMarkable 2" display appears in
-**System Settings → Displays**, to the left of your main screen. macOS asks for two permissions:
+The rM2 Sidecar window opens, the app appears in the Dock, and a new "reMarkable 2" display appears
+in **System Settings → Displays**, to the left of your main screen. macOS asks for two permissions:
 
-- **Screen Recording:** grant it, then choose **Quit** from the rM2 menu and open the app again. It
+- **Screen Recording:** grant it, then quit the app (⌘Q or close its window) and open it again. It
   can't capture the screen until it's relaunched.
 - **Accessibility:** lets the pen move and click your mouse. It works straight away.
 
-If either is missing, the rM2 menu shows a "Grant…" item that opens the right Settings page.
+If either is missing, the window shows a **Grant…** button that opens the right Settings page.
 
 ### 7. Connect
 
-Choose **Connect** from the rM2 menu. The app starts the tablet side over SSH, and within about
-5 seconds the menu shows **Connected (USB)** and the tablet shows the new display. Drag windows onto
-it past the left edge of your main screen.
+Click **Connect** in the window. The app starts the tablet side over SSH, and within about
+5 seconds the window shows **Connected (USB)** and the tablet shows the new display. Drag windows
+onto it past the left edge of your main screen. Closing the window quits the app, which ends the
+session and brings the tablet's own app back.
 
 ## Using it
 
-**Menu-bar states:** `rM2 ○` Disconnected, `rM2 …` Starting tablet…, `rM2 ●` Connected (USB or
-Wi-Fi), `rM2 !` Error, with the reason in the menu.
+**Window states:** gray Disconnected, orange Starting tablet… or Reconnecting…, green Connected (USB
+or Wi-Fi), red with the reason when something went wrong.
 
 **Pen and touch:**
 
@@ -166,8 +167,18 @@ Wi-Fi), `rM2 !` Error, with the reason in the menu.
 
 Touch is ignored while the pen is near the screen, so resting your hand doesn't click.
 
-**Text size.** The display starts at "looks like 702 × 936": all 1404 × 1872 pixels, drawn at double
-size. For bigger text, choose 600 × 800 or 540 × 720 in **System Settings → Displays → reMarkable 2**.
+**Orientation.** Choose it in the window, any time, even while connected:
+
+- **Portrait:** the tablet upright, with its thick edge on the left.
+- **Landscape ↓:** the tablet on its side, with the thick edge at the bottom.
+- **Landscape ↑:** the tablet on its side, with the thick edge at the top.
+
+The app remembers your choice. In landscape the Mac's reMarkable display is 1872 × 1404, and the pen
+and touch follow the rotation.
+
+**Text size.** The display starts at "looks like 702 × 936" (936 × 702 in landscape): all the
+tablet's pixels, drawn at double size. For bigger text, choose a smaller size in **System Settings →
+Displays → reMarkable 2**. Your text size is kept when you rotate.
 
 **Ending a session.** Choose **Disconnect** or **Quit**, or press the tablet's power button. The
 normal reMarkable screen returns within a few seconds. A session also ends by itself if the Mac has
@@ -221,7 +232,7 @@ ssh root@10.11.99.1 rm-ssh-over-wlan on    # 'off' undoes it
 ## How it works
 
 ```
-Mac (menu-bar app)                                        reMarkable 2 (tablet server)
+Mac (Dock app)                                            reMarkable 2 (tablet server)
 virtual display 1404×1872
  → capture 4×/s, grayscale, changed areas only
  → zlib-compressed rects ─────── SSH tunnel (USB/Wi-Fi) ──→ draw on e-ink (fast or quality mode)

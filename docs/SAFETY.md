@@ -36,6 +36,9 @@ these cases:
   start fails, and the tablet's failure handler **reboots** it. `run.sh` counts every restart (and
   the boot start) and refuses once there have been 3 in the last 10 minutes. The Mac app shows
   this as "Tablet busy… try again in N s".
+- **One session at a time:** it won't start while another session is still running or ending. A
+  second session would restart `xochitl` under the running app when it ended. The lock is held by
+  everything a session starts, so it's released only once `xochitl` is back.
 - **Every exit path restarts `xochitl`:** a normal exit, a crash, the time limit, and an
   independent watchdog that runs even if `run.sh` itself is killed.
 
